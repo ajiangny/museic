@@ -1,0 +1,299 @@
+/* =========================================================
+   Museic — Base Stylesheet
+   ========================================================= */
+
+/* ----- Reset & Box Model -------------------------------- */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ----- Root Variables ----------------------------------- */
+:root {
+  --bg:          #0f0f1a;
+  --surface:     #1a1a2e;
+  --border:      #2a2a45;
+  --text:        #e0e0f0;
+  --text-muted:  #7a7a9a;
+  --accent:      #7c6af7;
+  --accent-dark: #5a4fd4;
+  --error-bg:    #2a1a1a;
+  --error-border:#5a2222;
+  --error-text:  #ff7070;
+}
+
+/* ----- Base --------------------------------------------- */
+body {
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-size: 1rem;
+  line-height: 1.6;
+  background-color: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* ----- Layout ------------------------------------------- */
+.page {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+.page-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 80vh;
+  text-align: center;
+}
+
+/* ----- Typography --------------------------------------- */
+h1 {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.25rem;
+}
+
+h1 .logo-icon {
+  margin-right: 0.25rem;
+}
+
+h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+}
+
+p {
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+
+/* ----- Card --------------------------------------------- */
+.card {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.card h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+
+/* ----- Button ------------------------------------------- */
+.btn {
+  display: inline-block;
+  padding: 0.65rem 1.75rem;
+  background-color: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.2s, transform 0.15s;
+}
+
+.btn:hover {
+  background-color: var(--accent-dark);
+  transform: translateY(-1px);
+  text-decoration: none;
+}
+
+.btn-full {
+  width: 100%;
+  text-align: center;
+}
+
+/* ----- Form Elements ------------------------------------ */
+label {
+  display: block;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+select {
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  background-color: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+  appearance: none;
+  cursor: pointer;
+}
+
+select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* ----- Track List --------------------------------------- */
+.track-list {
+  list-style: none;
+}
+
+.track-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.track-list li:last-child {
+  border-bottom: none;
+}
+
+.track-num {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  min-width: 1.5rem;
+  text-align: right;
+}
+
+/* ----- Keyword Tag -------------------------------------- */
+.keyword-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.tag {
+  display: inline-block;
+  background-color: rgba(124, 106, 247, 0.15);
+  color: var(--accent);
+  padding: 0.2rem 0.65rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: 1px solid rgba(124, 106, 247, 0.3);
+}
+
+/* ----- Art Grid ----------------------------------------- */
+.section-heading {
+  font-size: 1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+
+.art-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.art-card {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.art-card img {
+  width: 100%;
+  height: 190px;
+  object-fit: cover;
+  display: block;
+  background-color: var(--border);
+}
+
+.art-card .art-info {
+  padding: 0.85rem 1rem;
+}
+
+.art-card .art-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 0.2rem;
+}
+
+.art-card .art-artist {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* ----- Error / 404 -------------------------------------- */
+.error-box {
+  background-color: var(--error-bg);
+  border: 1px solid var(--error-border);
+  border-radius: 10px;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  max-width: 480px;
+}
+
+.error-box h1 {
+  color: var(--error-text);
+  margin-bottom: 0.75rem;
+}
+
+.error-box p {
+  margin-bottom: 1.5rem;
+}
+
+/* ----- Misc --------------------------------------------- */
+.no-results {
+  text-align: center;
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 2rem 0;
+}
+
+.actions {
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+/* ----- Per-track result section ------------------------- */
+.track-section {
+  margin-bottom: 2.5rem;
+}
+
+.track-header {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.track-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+}

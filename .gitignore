@@ -1,0 +1,17 @@
+# Credentials
+config.js
+
+# Cache directory (recreated at runtime)
+cache/
+!cache/.gitkeep
+
+# Implementation notes (not for submission)
+IMPLEMENTATION.md
+SEQUENCE.txt
+
+# Node
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
