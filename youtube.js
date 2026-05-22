@@ -66,7 +66,7 @@ function fetchPlaylistItems(accessToken, playlistId, callback) {
     },
   };
 
-  console.log('[A] YouTube playlistItems request firing');
+  console.log('API 1 called: YouTube playlistItems');
 
   httpsRequest(options, null, function (err, res) {
     if (err) return callback(err);
@@ -74,7 +74,7 @@ function fetchPlaylistItems(accessToken, playlistId, callback) {
       return callback(new Error('PlaylistItems fetch failed with status ' + res.statusCode + ': ' + res.body));
     }
     try {
-      console.log('[A] YouTube playlistItems response received');
+      console.log('API 1 response received: YouTube playlistItems');
       callback(null, JSON.parse(res.body));
     } catch (e) {
       callback(new Error('Failed to parse playlistItems response'));

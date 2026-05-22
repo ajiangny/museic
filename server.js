@@ -52,6 +52,13 @@ var server = http.createServer(function (req, res) {
     return;
   }
 
+  // ── GET /search (wrong method) ────────────────────────────────
+  if (req.method === 'GET' && pathname === '/search') {
+    res.writeHead(404, { 'Content-Type': 'text/html' });
+    res.end(views.errorPage('This endpoint only accepts POST requests.'));
+    return;
+  }
+
   // ── POST /search ──────────────────────────────────────────────
   if (req.method === 'POST' && pathname === '/search') {
     var body = '';
@@ -83,6 +90,7 @@ var server = http.createServer(function (req, res) {
         }
 
         // Phase 2: Fire YouTube playlistItems (API call A)
+        console.log('API 1 called: YouTube playlistItems');
         youtube.fetchPlaylistItems(accessToken, playlistId, function (err, data) {
           if (err) {
             // If 401, try refresh once then retry
@@ -99,9 +107,17 @@ var server = http.createServer(function (req, res) {
                     res.end(views.errorPage('Failed to fetch playlist items: ' + retryErr.message));
                     return;
                   }
+                  console.log('API 1 response received: YouTube playlistItems');
                   handlePlaylistItemsResponse(retryData, res);
                 });
               });
+              return;
+            }
+
+            // Check for playlist-not-found or forbidden
+            if (err.message && (err.message.indexOf('404') !== -1 || err.message.indexOf('403') !== -1)) {
+              res.writeHead(404, { 'Content-Type': 'text/html' });
+              res.end(views.errorPage('Playlist not found or access denied. It may be private or deleted.'));
               return;
             }
 
@@ -110,6 +126,7 @@ var server = http.createServer(function (req, res) {
             return;
           }
 
+          console.log('API 1 response received: YouTube playlistItems');
           // Phase 3: Process YouTube response, fire AIC (API call B)
           handlePlaylistItemsResponse(data, res);
         });

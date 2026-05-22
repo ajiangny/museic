@@ -24,7 +24,7 @@ function searchAIC(keyword, callback) {
       return callback(null, cached);
     }
 
-    console.log('[B] AIC search request firing — keyword:', keyword);
+    console.log('API 2 called: AIC search — query:', keyword);
 
     var searchPath = '/api/v1/artworks/search?' + querystring.stringify({
       q: keyword,
@@ -48,7 +48,7 @@ function searchAIC(keyword, callback) {
         var parsed = JSON.parse(res.body);
         var artworks = parsed.data || [];
 
-        console.log('[B] AIC search response received —', artworks.length, 'results');
+        console.log('API 2 response received: AIC search —', artworks.length, 'results');
 
         // Cache the results
         setCached(keyword, artworks, function () {
@@ -175,13 +175,13 @@ function searchAICForTracks(titles, callback) {
       .replace(/\s+/g, ' ')
       .trim();
 
-    console.log('[B] AIC search ' + (index + 1) + '/' + titles.length + ' (full title) — query:', fullQuery);
+    console.log('API 2 called: AIC search ' + (index + 1) + '/' + titles.length + ' (full title) — query:', fullQuery);
 
     searchAIC(fullQuery, function (err, artworks) {
       // If full-title search returned nothing, retry with a single keyword
       if (!err && (!artworks || artworks.length === 0)) {
         var keyword = extractKeyword(titles[index]);
-        console.log('[B] AIC fallback search — keyword:', keyword);
+        console.log('API 2 called: AIC fallback search — keyword:', keyword);
 
         searchAIC(keyword, function (fallbackErr, fallbackArtworks) {
           pairs.push({
