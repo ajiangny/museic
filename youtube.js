@@ -1,41 +1,27 @@
-/**
- * youtube.js — YouTube Data API v3 interactions
- *
- * Fetch user playlists and playlist items using OAuth access tokens.
- * All calls use the shared httpsRequest helper with callbacks only.
- */
+// youtube.js — YouTube Data API v3 interactions
+// Fetch user playlists and playlist items using OAuth access tokens.
 
 const querystring = require('querystring');
 const { httpsRequest } = require('./httpClient');
 
-/**
- * Fetch the authenticated user's playlists.
- * @param {string} accessToken - OAuth2 access token
- * @param {function} callback  - callback(err, playlistsData)
- */
 function fetchPlaylists(accessToken, callback) {
-  var options = {
+  const options = {
     hostname: 'www.googleapis.com',
     path: '/youtube/v3/playlists?part=snippet&mine=true&maxResults=25',
     method: 'GET',
     headers: {
-      Authorization: 'Bearer ' + accessToken,
+      Authorization: `Bearer ${accessToken}`,
     },
   };
 
-  httpsRequest(options, null, function (err, res) {
+  httpsRequest(options, null, (err, res) => {
     if (err) return callback(err);
     if (res.statusCode !== 200) {
-      return callback(new Error('Playlists fetch failed with status ' + res.statusCode + ': ' + res.body));
+      return callback(new Error(`Playlists fetch failed with status ${res.statusCode}: ${res.body}`));
     }
     try {
-      var data = JSON.parse(res.body);
-      // Prepend the "Liked Videos" special playlist (LL is a built-in playlist
-      // accessible with youtube.readonly; it is not returned by mine=true).
-      var likedVideos = {
-        id: 'LL',
-        snippet: { title: '\u2764\ufe0f Liked Videos' },
-      };
+      const data = JSON.parse(res.body);
+      const likedVideos = { id: 'LL', snippet: { title: 'Liked Videos' } };
       data.items = [likedVideos].concat(data.items || []);
       callback(null, data);
     } catch (e) {
@@ -44,34 +30,28 @@ function fetchPlaylists(accessToken, callback) {
   });
 }
 
-/**
- * Fetch items from a specific playlist.
- * @param {string} accessToken - OAuth2 access token
- * @param {string} playlistId  - YouTube playlist ID (e.g. PLxxxx)
- * @param {function} callback  - callback(err, playlistItemsData)
- */
 function fetchPlaylistItems(accessToken, playlistId, callback) {
-  var params = querystring.stringify({
+  const params = querystring.stringify({
     part: 'snippet',
-    playlistId: playlistId,
+    playlistId,
     maxResults: 10,
   });
 
-  var options = {
+  const options = {
     hostname: 'www.googleapis.com',
-    path: '/youtube/v3/playlistItems?' + params,
+    path: `/youtube/v3/playlistItems?${params}`,
     method: 'GET',
     headers: {
-      Authorization: 'Bearer ' + accessToken,
+      Authorization: `Bearer ${accessToken}`,
     },
   };
 
   console.log('API 1 called: YouTube playlistItems');
 
-  httpsRequest(options, null, function (err, res) {
+  httpsRequest(options, null, (err, res) => {
     if (err) return callback(err);
     if (res.statusCode !== 200) {
-      return callback(new Error('PlaylistItems fetch failed with status ' + res.statusCode + ': ' + res.body));
+      return callback(new Error(`PlaylistItems fetch failed with status ${res.statusCode}: ${res.body}`));
     }
     try {
       console.log('API 1 response received: YouTube playlistItems');
@@ -82,7 +62,4 @@ function fetchPlaylistItems(accessToken, playlistId, callback) {
   });
 }
 
-module.exports = {
-  fetchPlaylists: fetchPlaylists,
-  fetchPlaylistItems: fetchPlaylistItems,
-};
+module.exports = { fetchPlaylists, fetchPlaylistItems };

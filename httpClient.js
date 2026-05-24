@@ -8,30 +8,20 @@
 
 const https = require('https');
 
-/**
- * Make an HTTPS request.
- * @param {object} options  - Standard Node https.request options (hostname, path, method, headers)
- * @param {string|null} postBody - Request body for POST requests, or null for GET
- * @param {function} callback - callback(err, { statusCode, headers, body })
- */
+function process_stream(stream, callback, ...args) {
+  let body = "";
+  stream.on("data", chunk => body += chunk);
+  stream.on("end", () => callback(body, ...args));
+}
+
 function httpsRequest(options, postBody, callback) {
-  const req = https.request(options, function (res) {
-    var body = '';
-    res.on('data', function (chunk) {
-      body += chunk;
-    });
-    res.on('end', function () {
-      callback(null, {
-        statusCode: res.statusCode,
-        headers: res.headers,
-        body: body,
-      });
+  const req = https.request(options, (res) => {
+    process_stream(res, (body) => {
+      callback(null, { statusCode: res.statusCode, headers: res.headers, body });
     });
   });
 
-  req.on('error', function (err) {
-    callback(err);
-  });
+  req.on("error", (err) => callback(err));
 
   if (postBody) {
     req.write(postBody);
@@ -39,4 +29,4 @@ function httpsRequest(options, postBody, callback) {
   req.end();
 }
 
-module.exports = { httpsRequest: httpsRequest };
+module.exports = { httpsRequest };

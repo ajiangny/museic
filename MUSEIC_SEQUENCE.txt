@@ -1,0 +1,135 @@
+title Museic — Google OAuth 2.0 + YouTube Data API + AIC Art Search
+
+participant accounts.google.com
+participant Browser
+participant App Server
+participant oauth2.googleapis.com
+participant www.googleapis.com
+participant api.artic.edu
+
+group Deliver Landing Page
+Browser->(1)App Server:**HEADER**\nGET / HTTP/1.1\nHost:localhost:8080
+App Server->(1)Browser: **HEADER**\nHTTP/1.1 200\nContent-Type: text/html\n**BODY**\n[HTML] landing.html contents\n(form with "Login with Google" link to /login)
+
+end
+
+group User Clicks "Login with Google"
+
+Browser->(1)App Server:**HEADER**\nGET /login HTTP/1.1\nHost:localhost:8080
+
+note over App Server: Randomly generate a **state** (20 random bytes → hex).\nState is critical for CSRF protection.\nStore in stateStore Map\n  • Key: state\n  • Value: timestamp
+
+end
+
+group Front-Channel Redirects (Public)
+
+App Server->(1)Browser: **HEADER**\nHTTP/1.1 302\nLocation:https://accounts.google.com/o/oauth2/v2/auth?client_id=${client_id}\n&redirect_uri=${redirect_uri}&response_type=code\n&scope=${scopes}&access_type=offline&prompt=consent&state=${state}
+
+note over App Server,Browser: Redirect to Google's authorization server to:\n  • Log in to a Google account\n  • Grant Museic's client_id the ability to access\n    the user's YouTube data under scope:\n    youtube.readonly\n  • {state} will be returned unchanged for CSRF validation
+
+note over Browser:Browser sees 302,\nCreates a new request to accounts.google.com\nforwarding {client_id, redirect_uri, response_type,\nscope, access_type, prompt, state}
+
+
+Browser->(1)accounts.google.com:**HEADER**\nGET /o/oauth2/v2/auth?client_id=${client_id}\n&redirect_uri=${redirect_uri}&response_type=code\n&scope=${scopes}&access_type=offline\n&prompt=consent&state=${state} HTTP/2\nHost:accounts.google.com
+opt This can be shortcircuited if the browser is already logged in
+
+accounts.google.com->(1)Browser:**HEADER**\nHTTP/2 200\n**BODY**\n[HTML] Google Login Form
+
+
+Browser->(1)accounts.google.com:Browser supplies Google email and password
+
+end
+opt This can be shortcircuited if consent was previously granted (but prompt=consent forces it)
+
+
+accounts.google.com->(1)Browser:**HEADER**\nHTTP/2 200\n**BODY**\n[HTML] Consent screen asking:\n"Allow Museic to view your YouTube account?"
+
+Browser->(1)accounts.google.com:User clicks "Allow"
+end
+
+accounts.google.com->(1)Browser: **HEADER**\nHTTP/2 302\nLocation:http://localhost:8080/callback?code=${code}&state=${state}
+
+note over accounts.google.com,Browser:Redirect Browser back to App Server with {code} and {state}.\n  • code is an authorization code — it represents the user's explicit\n    permission for {client_id} to read their YouTube data.\n  • state is forwarded back unchanged for CSRF validation.
+
+note over Browser:Browser sees 302,\nCreates a new request\nto localhost:8080/callback\nforwarding {code} and {state}
+
+
+Browser->(1)App Server:**HEADER**\nGET /callback?code=${code}&state=${state} HTTP/1.1\nHost:localhost:8080
+
+end
+
+group Back-Channel Token Exchange (Private)
+
+note over App Server: Validate {state}: check that stateStore contains it.\nIf missing → 403 "Possible CSRF attack".\nIf valid → delete from stateStore (single-use).
+
+App Server->(1)oauth2.googleapis.com:**HEADER**\nPOST /token HTTP/2\nHost:oauth2.googleapis.com\nContent-Type: application/x-www-form-urlencoded\n**BODY**\nclient_id={client_id}&client_secret={client_secret}\n&code={code}&grant_type=authorization_code\n&redirect_uri={redirect_uri}
+
+note over App Server,oauth2.googleapis.com:Sends {client_id, client_secret, code, grant_type, redirect_uri}\nto exchange the authorization code for tokens.\n  **client_id**: identifies the app (public)\n  **client_secret**: proves ownership of the app (private)\n  **code**: the user's permission grant\n  **grant_type**: "authorization_code" (standard OAuth 2.0)\n  **redirect_uri**: must match the one used in the authorize request
+
+oauth2.googleapis.com->(1)App Server:**HEADER**\nHTTP/2 200\n**BODY**\n[JSON] {access_token, refresh_token, expires_in, token_type, scope}
+
+note over App Server: Store tokens in memory (tokenStore):\n  • access_token — used in API request headers\n  • refresh_token — used to get new access_tokens\n  • expires_at — Date.now() + expires_in * 1000
+
+end
+
+group Fetch User's Playlists (API 1a)
+
+App Server->(1)www.googleapis.com:**HEADER**\nGET /youtube/v3/playlists?part=snippet&mine=true&maxResults=25 HTTP/2\nHost:www.googleapis.com\nAuthorization: Bearer **{access_token}**
+
+www.googleapis.com->(1)App Server:**HEADER**\nHTTP/2 200\n**BODY**\n[JSON] {items: [{id, snippet: {title}}, ...]}
+
+note over App Server: Receives user's YouTube playlists.\nPrepends a synthetic "Liked Videos" entry (id: "LL").\nRenders the playlist picker HTML page.
+
+App Server->(1)Browser: **HEADER**\nHTTP/1.1 200\nContent-Type: text/html\n**BODY**\n[HTML] Playlist picker page with <select> dropdown\nof the user's playlists and a "Find Matching Art" button
+
+end
+
+group User Selects Playlist & Submits Form
+
+Browser->(1)App Server:**HEADER**\nPOST /search HTTP/1.1\nHost:localhost:8080\nContent-Type: application/x-www-form-urlencoded\n**BODY**\nplaylistId={playlistId}
+
+note over App Server: Validate playlistId against regex:\n/^(PL[A-Za-z0-9_-]+|LL|WL|FL)$/\nIf invalid → 404 error page.\n\nCall ensureValidToken() to check if access_token\nis still valid. If expired → refresh using refresh_token.\nIf no token at all → 302 redirect to /login.
+
+end
+
+group Fetch Playlist Items (API 1b)
+
+App Server->(1)www.googleapis.com:**HEADER**\nGET /youtube/v3/playlistItems?part=snippet\n&playlistId={playlistId}&maxResults=10 HTTP/2\nHost:www.googleapis.com\nAuthorization: Bearer **{access_token}**
+
+note over App Server,www.googleapis.com:Fetches up to 10 video titles from the selected playlist.\nIf response is 401 (token expired mid-session),\nApp Server will refresh the token and retry once.
+
+www.googleapis.com->(1)App Server:**HEADER**\nHTTP/2 200\n**BODY**\n[JSON] {items: [{snippet: {title}}, ...]}
+
+note over App Server: Extracts video titles from response:\ntitles = items.map(item => item.snippet.title)\nPasses array of titles to searchAICForTracks()
+
+end
+
+group AIC Art Search — Sequential Per Track (API 2)
+
+note over App Server: For each track title (sequentially, one at a time):\n  1. Clean the title: strip (...) and [...] noise\n  2. Check file cache (cache/aic-{query}.json)\n     • If cache hit and TTL < 24h → use cached data\n     • If cache miss → call AIC API\n  3. If full-title search returns 0 results,\n     extract a keyword and retry once
+
+App Server->(1)api.artic.edu:**HEADER**\nGET /api/v1/artworks/search?q={cleanedTitle}\n&limit=5&fields=id,title,artist_display,image_id HTTP/2\nHost:api.artic.edu\nUser-Agent: cs355-fp-museum-soundtrack
+
+api.artic.edu->(1)App Server:**HEADER**\nHTTP/2 200\n**BODY**\n[JSON] {data: [{id, title, artist_display, image_id}, ...]}
+
+note over App Server: If artworks.length > 0:\n  • Cache the result to cache/aic-{query}.json\n  • Pair track title with artworks array\nIf artworks.length === 0:\n  • Extract keyword using extractKeyword(title)\n    (strips noise, finds longest non-stopword)\n  • Retry AIC search with just the keyword
+
+opt Fallback search when full title returns 0 results
+
+App Server->(1)api.artic.edu:**HEADER**\nGET /api/v1/artworks/search?q={keyword}\n&limit=5&fields=id,title,artist_display,image_id HTTP/2\nHost:api.artic.edu\nUser-Agent: cs355-fp-museum-soundtrack
+
+api.artic.edu->(1)App Server:**HEADER**\nHTTP/2 200\n**BODY**\n[JSON] {data: [{id, title, artist_display, image_id}, ...]}
+
+end
+
+note over App Server: After all tracks are processed, build pairs array:\n[{title, keyword, artworks}, ...]\nEach artwork has an image URL built from image_id:\nhttps://www.artic.edu/iiif/2/{image_id}/full/400,/0/default.jpg
+
+end
+
+group Render Results Page
+
+App Server->(1)Browser:**HEADER**\nHTTP/1.1 200\nContent-Type: text/html\n**BODY**\n[HTML] Results page showing each track\npaired with up to 3 matching artworks\n(title, artist, and image from AIC)
+
+note over Browser: User sees their YouTube playlist tracks\neach paired with matching artwork from\nthe Art Institute of Chicago.\nA "Start Over" link returns to /
+
+end

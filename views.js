@@ -1,22 +1,11 @@
 /**
- * views.js — Dynamic HTML page builders
- *
- * Only pages that require injected API data live here.
- * Static pages (landing, 404) are served directly from static/*.html.
- * Styles live in static/style.css.
+ * views.js - dynamic HTML page builders
+ * only pages that require injected API data live here.
+ * static pages (landing, 404) are served directly from static/*.html.
+ * styles live in static/style.css.
  */
 
-/* ── Shared helpers ──────────────────────────────────────── */
-
-function escapeHtml(str) {
-  if (typeof str !== 'string') return '';
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
+//shared helpers
 function layout(title, body) {
   return [
     '<!DOCTYPE html>',
@@ -24,7 +13,7 @@ function layout(title, body) {
     '<head>',
     '  <meta charset="UTF-8">',
     '  <meta name="viewport" content="width=device-width, initial-scale=1.0">',
-    '  <title>' + escapeHtml(title) + '</title>',
+    '  <title>' + title + '</title>',
     '  <link rel="stylesheet" href="/static/style.css">',
     '</head>',
     '<body>',
@@ -34,22 +23,22 @@ function layout(title, body) {
   ].join('\n');
 }
 
-/* ── Playlist picker (dynamic: needs YouTube playlist data) ── */
+//Playlist picker (dynamic: needs YouTube playlist data)
 
 function playlistPickerPage(playlists) {
-  var options = '';
-  for (var i = 0; i < playlists.length; i++) {
-    options += '        <option value="' + escapeHtml(playlists[i].id) + '">'
-      + escapeHtml(playlists[i].snippet.title) + '</option>\n';
+  let options = '';
+  for (let i = 0; i < playlists.length; i++) {
+    options += '        <option value="' + playlists[i].id + '">'
+      + playlists[i].snippet.title + '</option>\n';
   }
 
-  var noResults = playlists.length === 0
+  let noResults = playlists.length === 0
     ? '    <p class="no-results">No playlists found on your account.</p>\n'
     : '';
 
-  var body = [
+  let body = [
     '  <div class="page">',
-    '    <h1><span class="logo-icon">&#127925;</span> Museic</h1>',
+    '    <h1>Museic</h1>',
     '    <h2>Pick a playlist to find matching artwork</h2>',
     '',
     '    <div class="card">',
@@ -69,38 +58,38 @@ function playlistPickerPage(playlists) {
   return layout('Museic \u2014 Pick a Playlist', body);
 }
 
-/* ── Results page (dynamic: needs YouTube + AIC paired data) ─ */
+// Results page (dynamic: needs YouTube + AIC paired data)
 
 /**
  * @param {Array} pairs - [{ title, keyword, artworks }, ...]
  */
 function resultsPage(pairs) {
-  var sections = '';
+  let sections = '';
 
-  for (var i = 0; i < pairs.length; i++) {
-    var pair = pairs[i];
+  for (let i = 0; i < pairs.length; i++) {
+    let pair = pairs[i];
 
-    /* Artwork cards for this track (show up to 3) */
-    var cards = '';
-    var artworks = pair.artworks || [];
-    var limit = artworks.length < 3 ? artworks.length : 3;
+    // Artwork cards for this track (show up to 3)
+    let cards = '';
+    let artworks = pair.artworks || [];
+    let limit = artworks.length < 3 ? artworks.length : 3;
 
     if (limit === 0) {
       cards = '        <p class="no-results">No matching artworks found.</p>';
     } else {
-      for (var j = 0; j < limit; j++) {
-        var art = artworks[j];
-        var imgUrl = art.image_id
+      for (let j = 0; j < limit; j++) {
+        let art = artworks[j];
+        let imgUrl = art.image_id
           ? 'https://www.artic.edu/iiif/2/' + art.image_id + '/full/400,/0/default.jpg'
           : '';
 
         cards += '        <div class="art-card">\n';
         if (imgUrl) {
-          cards += '          <img src="' + escapeHtml(imgUrl) + '" alt="' + escapeHtml(art.title || 'Artwork') + '" loading="lazy">\n';
+          cards += '          <img src="' + imgUrl + '" alt="' + (art.title || 'Artwork') + '" loading="lazy">\n';
         }
         cards += '          <div class="art-info">\n'
-          + '            <p class="art-title">' + escapeHtml(art.title || 'Untitled') + '</p>\n'
-          + '            <p class="art-artist">' + escapeHtml(art.artist_display || 'Unknown artist') + '</p>\n'
+          + '            <p class="art-title">' + (art.title || 'Untitled') + '</p>\n'
+          + '            <p class="art-artist">' + (art.artist_display || 'Unknown artist') + '</p>\n'
           + '          </div>\n'
           + '        </div>\n';
       }
@@ -110,8 +99,8 @@ function resultsPage(pairs) {
       '    <div class="track-section">',
       '      <div class="track-header">',
       '        <span class="track-num">' + (i + 1) + '</span>',
-      '        <span class="track-title">' + escapeHtml(pair.title) + '</span>',
-      '        <span class="tag">' + escapeHtml(pair.keyword) + '</span>',
+      '        <span class="track-title">' + pair.title + '</span>',
+      '        <span class="tag">' + pair.keyword + '</span>',
       '      </div>',
       '      <div class="art-grid">',
       cards.trimEnd(),
@@ -121,9 +110,9 @@ function resultsPage(pairs) {
     ].join('\n');
   }
 
-  var body = [
+  let body = [
     '  <div class="page">',
-    '    <h1><span class="logo-icon">&#127925;</span> Museic</h1>',
+    '    <h1>Museic</h1>',
     '    <h2>Your art &amp; music pairing</h2>',
     '',
     sections.trimEnd(),
@@ -137,14 +126,14 @@ function resultsPage(pairs) {
   return layout('Museic \u2014 Results', body);
 }
 
-/* ── Error page (dynamic: needs error message) ───────────── */
+// Error page (dynamic: needs error message)
 
 function errorPage(msg) {
-  var body = [
+  let body = [
     '  <div class="page page-center">',
     '    <div class="error-box">',
     '      <h1>Something went wrong</h1>',
-    '      <p>' + escapeHtml(msg) + '</p>',
+    '      <p>' + msg + '</p>',
     '      <a href="/" class="btn">Back to Home</a>',
     '    </div>',
     '  </div>',
@@ -153,7 +142,7 @@ function errorPage(msg) {
   return layout('Museic \u2014 Error', body);
 }
 
-/* ── Exports ─────────────────────────────────────────────── */
+// Exports
 
 module.exports = {
   playlistPickerPage: playlistPickerPage,
